@@ -1,0 +1,12 @@
+{
+	"name": "Player",
+	"type": "Player",
+	"life": 10,
+	"image": "image.png",
+	"position": {
+		"x": 10,
+		"y": 10
+	},
+	"speed": 95.55,
+	"items": [15, 25, 55, 90, 1, 2]
+}
