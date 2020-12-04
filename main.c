@@ -75,5 +75,8 @@ int main(int argc, char **argv) {
 
   // tjson_t *json = tjson_open("tileset.json");
   if (json) print_object(json, 1);
+  tjson_delete(json);
+  // free(json);
+  // printf("%p\n", json);
   return 0;
 }

@@ -5,5 +5,6 @@
   "image": "image.png",
   "position": [10, 10],
   "speed": 95.55,
-  "items": [15, 25, 55, 90, 1, 2]
+  "items": [15, 25, 55, 90, 1, 2],
+  "teste": false
 }

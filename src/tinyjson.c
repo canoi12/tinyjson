@@ -191,26 +191,26 @@ static void error_at_current(const char *message) {
   error_at(&parser.current, message);
 }
 
-static void advance_parser() {
-  parser.previous = parser.current;
+// static void advance_parser() {
+//   parser.previous = parser.current;
 
-  for (;;) {
-    parser.current = tjson_scan_token();
-    // printf("teste %d\n", parser.current.type);
-    if (parser.current.type != TJSON_TOKEN_ERROR) break;
+//   for (;;) {
+//     parser.current = tjson_scan_token();
+//     // printf("teste %d\n", parser.current.type);
+//     if (parser.current.type != TJSON_TOKEN_ERROR) break;
 
-    error_at_current(parser.current.start);
-  }
-}
+//     error_at_current(parser.current.start);
+//   }
+// }
 
-static void consume_parser(TJSON_TOKEN_ token_type, const char *message) {
-  if (parser.current.type == token_type) {
-    advance_parser();
-    return;
-  }
+// static void consume_parser(TJSON_TOKEN_ token_type, const char *message) {
+//   if (parser.current.type == token_type) {
+//     advance_parser();
+//     return;
+//   }
 
-  error_at_current(message);
-}
+//   error_at_current(message);
+// }
 
 char *parse_cstring(tjson_token_t *token) {
   char *string = (char*)malloc(token->length-1);
@@ -326,7 +326,8 @@ tjson_t* parse_json_token(tjson_token_t *token) {
   }
 
 
-  // error_at(token, "unkown symbol");
+  error_at(token, "unkown symbol");
+  exit(1);
   return NULL;
 }
 
@@ -359,12 +360,33 @@ tjson_t* tjson_open(const char *filename) {
 
 tjson_t* tjson_create(TJSON_TYPE_ type) {
   tjson_t *json = malloc(sizeof(*json));
+  memset(json, 0, sizeof(*json));
+
   json->name = NULL;
   json->type = type;
   json->next = NULL;
   json->child = NULL;
 
   return json;
+}
+
+void tjson_clear(tjson_t *json) {
+  if (!json) return;
+  if (json->type != TJSON_OBJECT && json->type != TJSON_ARRAY) return;
+
+  tjson_t *iter = json->child;
+  while (iter) {
+    tjson_t *next = iter->next;
+    tjson_delete(iter);
+    iter = next;
+  }
+}
+
+void tjson_delete(tjson_t *json) {
+  if (!json) return;
+  tjson_clear(json);
+  if (json->type == TJSON_STRING && json->string) free(json->string);
+  free(json);
 }
 
 tjson_t* tjson_create_null() {
@@ -508,32 +530,118 @@ tjson_t* tjson_array_last(tjson_t *array) {
 }
 
 void tjson_array_set_number(tjson_t *array, int index, double value) {
+  if (!array) return;
   tjson_t *number = tjson_create_number(value);
-  tjson_array_set(array, index, number);
+  if (!tjson_array_set(array, index, number)) tjson_delete(number);
 }
 
-void tjson_array_set_string(tjson_t *array, int index, const char* value);
-void tjson_array_set_bool(tjson_t *array, int index, int value);
-void tjson_array_set_array(tjson_t *array, int index, tjson_t *value);
-void tjson_array_set_object(tjson_t *array, int index, tjson_t *value);
+void tjson_array_set_string(tjson_t *array, int index, const char* value) {
+  if (!array) return;
+  tjson_t *string = tjson_create_string(value);
+  if (!tjson_array_set(array, index, string)) tjson_delete(string);
+}
 
-double tjson_array_get_number(tjson_t *array, int index);
-const char* tjson_array_get_string(tjson_t *array, int index);
-int tjson_array_get_bool(tjson_t *array, int index);
-tjson_t* tjson_array_get_array(tjson_t *array, int index);
-tjson_t* tjson_array_get_array(tjson_t *array, int index);
+void tjson_array_set_bool(tjson_t *array, int index, int value) {
+  if (!array) return;
+  tjson_t *boolean = tjson_create_bool(value);
+  if (!tjson_array_set(array, index, boolean)) tjson_delete(boolean);
+}
 
-void tjson_array_push_number(tjson_t *array, double value);
-void tjson_array_push_string(tjson_t *array, const char* value);
-void tjson_array_push_bool(tjson_t *array, int value);
-void tjson_array_push_array(tjson_t *array, tjson_t *value);
-void tjson_array_push_object(tjson_t *array, tjson_t *value);
+void tjson_array_set_array(tjson_t *array, int index, tjson_t *value) {
+  tjson_array_set(array, index, value);
+}
 
-double tjson_array_pop_number(tjson_t *array);
+void tjson_array_set_object(tjson_t *array, int index, tjson_t *value) {
+  tjson_array_set(array, index, value);
+}
+
+double tjson_array_opt_number(tjson_t *array, int index, double opt) {
+  tjson_t *number = tjson_array_get(array, index);
+  if (!number) return opt;
+  if (number->type != TJSON_NUMBER) return opt;
+  return number->number;
+}
+
+const char* tjson_array_opt_string(tjson_t *array, int index, const char* opt) {
+  tjson_t *string = tjson_array_get(array, index);
+  if (!string) return opt;
+  if (string->type != TJSON_STRING) return opt;
+  return string->string;
+}
+
+int tjson_array_opt_bool(tjson_t *array, int index, int opt) {
+  tjson_t *boolean = tjson_array_get(array, index);
+  if (!boolean) return opt;
+  if (boolean->type != TJSON_BOOL) return opt;
+  
+  return boolean->boolean;
+}
+
+tjson_t* tjson_array_opt_array(tjson_t *array, int index, tjson_t* opt) {
+  tjson_t *item = tjson_array_get(array, index);
+  if (!item) return opt;
+  if (item->type != TJSON_ARRAY) return opt;
+  return item;
+}
+
+tjson_t* tjson_array_opt_object(tjson_t *array, int index, tjson_t* opt) {
+  tjson_t *item = tjson_array_get(array, index);
+  if (!item) return opt;
+  if (item->type != TJSON_OBJECT) return opt;
+  return item;
+}
+
+void tjson_array_push_number(tjson_t *array, double value) {
+  if (!array) return;
+  tjson_t *number = tjson_create_number(value);
+  tjson_array_push(array, number);
+}
+
+void tjson_array_push_string(tjson_t *array, const char* value) {
+  if (!array) return;
+  tjson_t *string = tjson_create_string(value);
+  tjson_array_push(array, string);
+}
+
+void tjson_array_push_bool(tjson_t *array, int value) {
+  if (!array) return;
+  tjson_t *boolean = tjson_create_bool(value);
+  tjson_array_push(array, boolean);
+}
+
+void tjson_array_push_array(tjson_t *array, tjson_t *value) {
+  tjson_array_push(array, value);
+}
+
+void tjson_array_push_object(tjson_t *array, tjson_t *value) {
+  tjson_array_push(array, value);
+}
+
+double tjson_array_pop_number(tjson_t *array) {
+  tjson_t *last = tjson_array_pop(array);
+  if (!last) return TJSON_NUMBER_ERROR;
+  double value = last->number;
+  tjson_delete(last);
+
+  return value;
+}
+
 const char* tjson_array_pop_string(tjson_t *array);
-int tjson_array_pop_bool(tjson_t *array);
-tjson_t* tjson_array_pop_array(tjson_t *array);
-tjson_t* tjson_array_pop_object(tjson_t *array);
+
+int tjson_array_pop_bool(tjson_t *array) {
+  tjson_t *last = tjson_array_pop(array);
+  if (!last) return TJSON_NUMBER_ERROR;
+  int value = last->boolean;
+  tjson_delete(last);
+
+  return value;
+}
+tjson_t* tjson_array_pop_array(tjson_t *array) {
+  return tjson_array_pop(array);
+}
+tjson_t* tjson_array_pop_object(tjson_t *array) {
+  return tjson_array_pop(array);
+}
 
 
 /*==============*
@@ -588,16 +696,58 @@ tjson_t* tjson_object_get(tjson_t *object, const char *name) {
 
 void tjson_object_set_number(tjson_t *object, const char *name, double value) {
   tjson_t *number = tjson_create_number(value);
-  tjson_object_set(object, name, number);
+  if (!tjson_object_set(object, name, number)) tjson_delete(number);
 }
 
-void tjson_object_set_string(tjson_t *object, const char *name, const char* value);
-void tjson_object_set_bool(tjson_t *object, const char *name, int value);
-void tjson_object_set_array(tjson_t *object, const char *name, tjson_t *value);
-void tjson_object_set_object(tjson_t *object, const char *name, tjson_t *value);
+void tjson_object_set_string(tjson_t *object, const char *name, const char* value) {
+  tjson_t *string = tjson_create_string(value);
+  if (!tjson_object_set(object, name, string)) tjson_delete(string);
+}
 
-double tjson_object_get_number(tjson_t *object, const char *name);
-const char* tjson_object_get_string(tjson_t *object, const char *name);
-int tjson_object_get_bool(tjson_t *object, const char *name);
-tjson_t* tjson_object_get_array(tjson_t *object, const char *name);
-tjson_t* tjson_object_get_object(tjson_t *object, const char *name);
+void tjson_object_set_bool(tjson_t *object, const char *name, int value) {
+  tjson_t *boolean = tjson_create_bool(value);
+  if (!tjson_object_set(object, name, boolean)) tjson_delete(boolean);
+}
+
+void tjson_object_set_array(tjson_t *object, const char *name, tjson_t *value) {
+  tjson_object_set(object, name, value);
+}
+
+void tjson_object_set_object(tjson_t *object, const char *name, tjson_t *value) {
+  tjson_object_set(object, name, value);
+}
+
+double tjson_object_opt_number(tjson_t *object, const char *name, double opt) {
+  tjson_t *item = tjson_object_get(object, name);
+  if (!item) return opt;
+  if (item->type != TJSON_NUMBER) return opt;
+  return item->number;
+}
+
+const char* tjson_object_opt_string(tjson_t *object, const char *name, const char *opt) {
+  tjson_t *item = tjson_object_get(object, name);
+  if (!item) return opt;
+  if (item->type != TJSON_STRING) return opt;
+  return item->string;
+}
+
+int tjson_object_opt_bool(tjson_t *object, const char *name, int opt) {
+  tjson_t *item = tjson_object_get(object, name);
+  if (!item) return opt;
+  if (item->type != TJSON_BOOL) return opt;
+  return item->boolean;
+}
+
+tjson_t* tjson_object_opt_array(tjson_t *object, const char *name, tjson_t *opt) {
+  tjson_t *item = tjson_object_get(object, name);
+  if (!item) return opt;
+  if (item->type != TJSON_ARRAY) return opt;
+  return item;
+}
+
+tjson_t* tjson_object_opt_object(tjson_t *object, const char *name, tjson_t *opt) {
+  tjson_t *item = tjson_object_get(object, name);
+  if (!item) return opt;
+  if (item->type != TJSON_OBJECT) return opt;
+  return item;
+}

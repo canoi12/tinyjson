@@ -8,6 +8,7 @@
 #define TJSON_API
 #define tjson_foreach(element, array) for(element = (array != NULL) ? (array)->child : NULL; element != NULL; element = element->next)
 
+#define TJSON_NUMBER_ERROR -25215910
 
 typedef struct tjson_s         tjson_t;
 typedef struct tjson_token_s   tjson_token_t;
@@ -79,15 +80,18 @@ struct tjson_s {
   tjson_t *next;
 };
 
-TJSON_API void tjson_init_scanner(const char *json_str);
-TJSON_API tjson_token_t tjson_scan_token();
-TJSON_API tjson_token_t tjson_make_token(TJSON_TOKEN_ type);
-TJSON_API tjson_token_t tjson_error_token(const char *message);
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
 TJSON_API tjson_t* tjson_open(const char *filename);
 TJSON_API tjson_t* tjson_parse(const char *json_str);
 TJSON_API const char* tjson_print(tjson_t *json);
 TJSON_API int tjson_save(tjson_t *json, const char *filename);
+
+TJSON_API tjson_t* tjson_create(TJSON_TYPE_ type);
+TJSON_API void tjson_clear(tjson_t *json);
+TJSON_API void tjson_delete(tjson_t *json);
 
 TJSON_API tjson_t* tjson_create_null();
 TJSON_API tjson_t* tjson_create_number(double value);
@@ -127,11 +131,17 @@ TJSON_API void tjson_array_set_bool(tjson_t *array, int index, int value);
 TJSON_API void tjson_array_set_array(tjson_t *array, int index, tjson_t *value);
 TJSON_API void tjson_array_set_object(tjson_t *array, int index, tjson_t *value);
 
-TJSON_API double tjson_array_get_number(tjson_t *array, int index);
-TJSON_API const char* tjson_array_get_string(tjson_t *array, int index);
-TJSON_API int tjson_array_get_bool(tjson_t *array, int index);
-TJSON_API tjson_t* tjson_array_get_array(tjson_t *array, int index);
-TJSON_API tjson_t* tjson_array_get_array(tjson_t *array, int index);
+TJSON_API double tjson_array_opt_number(tjson_t *array, int index, double opt);
+TJSON_API const char* tjson_array_opt_string(tjson_t *array, int index, const char *opt);
+TJSON_API int tjson_array_opt_bool(tjson_t *array, int index, int opt);
+TJSON_API tjson_t* tjson_array_opt_array(tjson_t *array, int index, tjson_t *opt);
+TJSON_API tjson_t* tjson_array_opt_array(tjson_t *array, int index, tjson_t *opt);
+
+#define tjson_array_get_number(array, name) tjson_array_opt_number(array, name, TJSON_NUMBER_ERROR)
+#define tjson_array_get_string(array, name) tjson_array_opt_string(array, name, NULL)
+#define tjson_array_get_bool(array, name) tjson_array_opt_bool(array, name, TJSON_NUMBER_ERROR)
+#define tjson_array_get_array(array, name) tjson_array_opt_array(array, name, NULL)
+#define tjson_array_get_object(array, name) tjson_array_opt_object(array, name, NULL)
 
 TJSON_API void tjson_array_push_number(tjson_t *array, double value);
 TJSON_API void tjson_array_push_string(tjson_t *array, const char* value);
@@ -158,10 +168,30 @@ TJSON_API void tjson_object_set_bool(tjson_t *object, const char *name, int valu
 TJSON_API void tjson_object_set_array(tjson_t *object, const char *name, tjson_t *value);
 TJSON_API void tjson_object_set_object(tjson_t *object, const char *name, tjson_t *value);
 
-TJSON_API double tjson_object_get_number(tjson_t *object, const char *name);
-TJSON_API const char* tjson_object_get_string(tjson_t *object, const char *name);
-TJSON_API int tjson_object_get_bool(tjson_t *object, const char *name);
-TJSON_API tjson_t* tjson_object_get_array(tjson_t *object, const char *name);
-TJSON_API tjson_t* tjson_object_get_object(tjson_t *object, const char *name);
+TJSON_API double tjson_object_opt_number(tjson_t *object, const char *name, double opt);
+TJSON_API const char* tjson_object_opt_string(tjson_t *object, const char *name, const char *opt);
+TJSON_API int tjson_object_opt_bool(tjson_t *object, const char *name, int opt);
+TJSON_API tjson_t* tjson_object_opt_array(tjson_t *object, const char *name, tjson_t *opt);
+TJSON_API tjson_t* tjson_object_opt_object(tjson_t *object, const char *name, tjson_t *opt);
+
+#define tjson_object_get_number(object, name) tjson_object_opt_number(object, name, TJSON_NUMBER_ERROR)
+#define tjson_object_get_string(object, name) tjson_object_opt_string(object, name, NULL)
+#define tjson_object_get_bool(object, name) tjson_object_opt_bool(object, name, TJSON_NUMBER_ERROR)
+#define tjson_object_get_array(object, name) tjson_object_opt_array(object, name, NULL)
+#define tjson_object_get_object(object, name) tjson_object_opt_object(object, name, NULL)
+
+
+/*===============*
+ *    Scanner    *
+ *===============*/
+
+TJSON_API void tjson_init_scanner(const char *json_str);
+TJSON_API tjson_token_t tjson_scan_token();
+TJSON_API tjson_token_t tjson_make_token(TJSON_TOKEN_ type);
+TJSON_API tjson_token_t tjson_error_token(const char *message);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif
