@@ -1,6 +1,6 @@
 # tiny json
 
-tiny json is a small json parser lib, its based on [https://craftinginterpreters.com/] chapters about parsing.
+tiny json is a small json parser lib, its based on https://craftinginterpreters.com/ chapters about parsing.
 
 ```json
 {
