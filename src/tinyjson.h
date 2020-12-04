@@ -9,74 +9,74 @@
 #define tjson_foreach(element, array) for(element = (array != NULL) ? (array)->child : NULL; element != NULL; element = element->next)
 
 
-typedef struct tjson_s 				 tjson_t;
-typedef struct tjson_token_s 	 tjson_token_t;
+typedef struct tjson_s         tjson_t;
+typedef struct tjson_token_s   tjson_token_t;
 typedef struct tjson_scanner_s tjson_scanner_t;
-typedef struct tjson_parser_s	 tjson_parser_t;
+typedef struct tjson_parser_s  tjson_parser_t;
 
 typedef enum {
-	TJSON_NULL = 0,
-	TJSON_NUMBER,
-	TJSON_BOOL,
-	TJSON_STRING,
-	TJSON_ARRAY,
-	TJSON_OBJECT
+  TJSON_NULL = 0,
+  TJSON_NUMBER,
+  TJSON_BOOL,
+  TJSON_STRING,
+  TJSON_ARRAY,
+  TJSON_OBJECT
 } TJSON_TYPE_;
 
 typedef enum {
-	TJSON_TOKEN_NULL = 0,   // Null token 								'null'
-	TJSON_TOKEN_FALSE,  		// False token 								'false'
-	TJSON_TOKEN_TRUE,   		// True token 								'true'
-	TJSON_TOKEN_NUMBER, 		// Number token 							'012..9'
-	TJSON_TOKEN_STRING, 		// String token 							'"'
-	TJSON_TOKEN_LBRACE, 		// Left bracket token 				'{'
-	TJSON_TOKEN_RBRACE, 		// Right bracket token 				'}'
-	TJSON_TOKEN_LSQUAR, 		// Left square bracket token  '['
-	TJSON_TOKEN_RSQUAR, 		// Right square bracket token ']'
-	TJSON_TOKEN_COMMA,  		// Comma token 								','
-	TJSON_TOKEN_DOT,	  		// Dot token                  '.'
-	TJSON_TOKEN_MINUS,			// Minus token 								'-'
-	TJSON_TOKEN_COLON,			// Colon token 								':'
-	TJSON_TOKEN_IDENTIFIER, // Identifier token
-	TJSON_TOKEN_ERROR,  		// Error
-	TJSON_TOKEN_EOF     		// End of file
+  TJSON_TOKEN_NULL = 0,   // Null token                 'null'
+  TJSON_TOKEN_FALSE,      // False token                'false'
+  TJSON_TOKEN_TRUE,       // True token                 'true'
+  TJSON_TOKEN_NUMBER,     // Number token               '012..9'
+  TJSON_TOKEN_STRING,     // String token               '"'
+  TJSON_TOKEN_LBRACE,     // Left bracket token         '{'
+  TJSON_TOKEN_RBRACE,     // Right bracket token        '}'
+  TJSON_TOKEN_LSQUAR,     // Left square bracket token  '['
+  TJSON_TOKEN_RSQUAR,     // Right square bracket token ']'
+  TJSON_TOKEN_COMMA,      // Comma token                ','
+  TJSON_TOKEN_DOT,        // Dot token                  '.'
+  TJSON_TOKEN_MINUS,      // Minus token                '-'
+  TJSON_TOKEN_COLON,      // Colon token                ':'
+  TJSON_TOKEN_IDENTIFIER, // Identifier token
+  TJSON_TOKEN_ERROR,      // Error
+  TJSON_TOKEN_EOF         // End of file
 } TJSON_TOKEN_;
 
 struct tjson_scanner_s {
-	const char *start;
-	const char *current;
-	int line;
+  const char *start;
+  const char *current;
+  int line;
 };
 
 tjson_scanner_t scanner;
 
 struct tjson_token_s {
-	int type;
-	const char *start;
-	int length;
-	int line;
+  int type;
+  const char *start;
+  int length;
+  int line;
 };
 
 struct tjson_parser_s {
-	tjson_token_t current;
-	tjson_token_t previous;
-	int hand_error;
-	int panic_mode;
+  tjson_token_t current;
+  tjson_token_t previous;
+  int hand_error;
+  int panic_mode;
 };
 
 tjson_parser_t parser;
 
 struct tjson_s {
-	int type;
-	char *name;
-	union {
-		char *string;
-		double number;
-		int boolean;
-		tjson_t *child;
-	};
+  int type;
+  char *name;
+  union {
+    char *string;
+    double number;
+    int boolean;
+    tjson_t *child;
+  };
 
-	tjson_t *next;
+  tjson_t *next;
 };
 
 TJSON_API void tjson_init_scanner(const char *json_str);
