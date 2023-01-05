@@ -1,2 +1,5 @@
 tjson
 *.sublime-*
+*.o
+*.a
+*.json
