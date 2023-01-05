@@ -2,4 +2,7 @@ tjson
 *.sublime-*
 *.o
 *.a
+*.so
+*.dll
+*.do
 *.json

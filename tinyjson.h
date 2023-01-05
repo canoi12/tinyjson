@@ -2,7 +2,6 @@
 #define _TINYJSON_H_
 
 #define TJSON_API
-
 #define TJSON_NUMBER_ERROR -25215910
 
 typedef enum {
@@ -35,6 +34,10 @@ TJSON_API tjson_t* tjson_create_string(const char* value);
 TJSON_API tjson_t* tjson_create_bool(int value);
 TJSON_API tjson_t* tjson_create_array(void);
 TJSON_API tjson_t* tjson_create_object(void);
+
+TJSON_API TJSON_TYPE_ tjson_get_type(tjson_t* json);
+TJSON_API tjson_t* tjson_get_child(tjson_t* json);
+TJSON_API tjson_t* tjson_get_next(tjson_t* json);
 
 TJSON_API void tjson_set_name(tjson_t* json, const char* name);
 TJSON_API const char* tjson_get_name(tjson_t* json);
@@ -115,7 +118,6 @@ TJSON_API tjson_t* tjson_object_opt_object(tjson_t *object, const char *name, tj
 #if defined(__cplusplus)
 }
 #endif
-
 #endif /* _TINYJSON_H_ */
 
 #if defined(TJSON_IMPLEMENTATION)
@@ -131,22 +133,22 @@ typedef struct tjson_token_s tjson_token_t;
 typedef struct tjson_parser_s tjson_parser_t;
 
 typedef enum {
-  TJSON_TOKEN_NULL = 0,   // Null token                 'null'
-  TJSON_TOKEN_FALSE,      // False token                'false'
-  TJSON_TOKEN_TRUE,       // True token                 'true'
-  TJSON_TOKEN_NUMBER,     // Number token               '012..9'
-  TJSON_TOKEN_STRING,     // String token               '"'
-  TJSON_TOKEN_LBRACE,     // Left bracket token         '{'
-  TJSON_TOKEN_RBRACE,     // Right bracket token        '}'
-  TJSON_TOKEN_LSQUAR,     // Left square bracket token  '['
-  TJSON_TOKEN_RSQUAR,     // Right square bracket token ']'
-  TJSON_TOKEN_COMMA,      // Comma token                ','
-  TJSON_TOKEN_DOT,        // Dot token                  '.'
-  TJSON_TOKEN_MINUS,      // Minus token                '-'
-  TJSON_TOKEN_COLON,      // Colon token                ':'
-  TJSON_TOKEN_IDENTIFIER, // Identifier token
-  TJSON_TOKEN_ERROR,      // Error
-  TJSON_TOKEN_EOF         // End of file
+  TJSON_TOKEN_NULL = 0,   /* Null token                 'null'   */
+  TJSON_TOKEN_FALSE,      /* False token                'false'  */
+  TJSON_TOKEN_TRUE,       /* True token                 'true'   */
+  TJSON_TOKEN_NUMBER,     /* Number token               '012..9' */
+  TJSON_TOKEN_STRING,     /* String token               '"'      */
+  TJSON_TOKEN_LBRACE,     /* Left bracket token         '{'      */
+  TJSON_TOKEN_RBRACE,     /* Right bracket token        '}'      */
+  TJSON_TOKEN_LSQUAR,     /* Left square bracket token  '['      */
+  TJSON_TOKEN_RSQUAR,     /* Right square bracket token ']'      */
+  TJSON_TOKEN_COMMA,      /* Comma token                ','      */
+  TJSON_TOKEN_DOT,        /* Dot token                  '.'      */
+  TJSON_TOKEN_MINUS,      /* Minus token                '-'      */
+  TJSON_TOKEN_COLON,      /* Colon token                ':'      */
+  TJSON_TOKEN_IDENTIFIER, /* Identifier token                    */
+  TJSON_TOKEN_ERROR,      /* Error                               */
+  TJSON_TOKEN_EOF         /* End of file                         */
 } TJSON_TOKEN_;
 
 struct tjson_scanner_s {
@@ -197,7 +199,7 @@ tjson_t* tjson_parse(const char* json_str) { return s_parse_json(json_str); }
 tjson_t* tjson_open(const char* filename) {
     const char* source = s_file_read(filename);
     tjson_t* json = tjson_parse(source);
-    free(source);
+    free((void*)source);
     return json;
 }
 
@@ -263,6 +265,21 @@ tjson_t* tjson_create_array() { return tjson_create(TJSON_ARRAY); }
 
 tjson_t* tjson_create_object() { return tjson_create(TJSON_OBJECT); }
 
+tjson_t* tjson_get_child(tjson_t* json) {
+    if (!json) return NULL;
+    return json->child;
+}
+
+tjson_t* tjson_get_next(tjson_t* json) {
+    if (!json) return NULL;
+    return json->next;
+}
+
+TJSON_TYPE_ tjson_get_type(tjson_t* json) {
+    if (!json) return -1;
+    return json->type;
+}
+
 void tjson_set_name(tjson_t* json, const char* name) {
     if (!json) return;
     int len = strlen(name);
@@ -279,6 +296,42 @@ void tjson_set_name(tjson_t* json, const char* name) {
 const char* tjson_get_name(tjson_t* json) {
     if (!json) return NULL;
     return (const char*)json->name;
+}
+
+void tjson_set_number(tjson_t* json, double value) {
+    if (!json || json->type != TJSON_NUMBER) return;
+    json->number = value;
+}
+
+void tjson_set_string(tjson_t* json, const char* value) {
+    if (!json || json->type != TJSON_STRING) return;
+    if (!value) return;
+    int len = strlen(value);
+    if (len > strlen(json->string)) {
+        json->string = realloc(json->string, len+1);
+    }
+    memcpy(json->string, value, len);
+    json->string[len] = '\0';
+}
+
+void tjson_set_bool(tjson_t* json, int value) {
+    if (!json || json->type != TJSON_BOOL) return;
+    json->boolean = value;
+}
+
+double tjson_to_number(tjson_t* json) {
+    if (!json || json->type != TJSON_NUMBER) return TJSON_NUMBER_ERROR;
+    return json->number;
+}
+
+const char* tjson_to_string(tjson_t* json) {
+    if (!json || json->type != TJSON_STRING) return NULL;
+    return json->string;
+}
+
+int tjson_to_bool(tjson_t* json) {
+    if (!json || json->type != TJSON_NUMBER) return TJSON_NUMBER_ERROR;
+    return json->boolean;
 }
 
 /*=============*
@@ -343,8 +396,6 @@ void tjson_array_push(tjson_t *array, tjson_t *value) {
 tjson_t* tjson_array_pop(tjson_t *array) {
     if (!array) return NULL;
     if (array->type != TJSON_ARRAY && array->type != TJSON_OBJECT) return NULL;
-
-    // tjson_t *ret = NULL;
 
     tjson_t *iter = array->child;
     if (!iter) return NULL;
@@ -481,7 +532,6 @@ tjson_t* tjson_array_pop_array(tjson_t *array) {
 tjson_t* tjson_array_pop_object(tjson_t *array) {
     return tjson_array_pop(array);
 }
-
 
 /*==============*
  *    Object    *
@@ -803,7 +853,6 @@ static tjson_t* s_parse_array() {
 }
 
 tjson_t* s_parse_json_token(tjson_token_t *token) {
-    // tjson_t *json = tjson_create(TJSON_)
     switch (token->type) {
     case TJSON_TOKEN_LBRACE:
         return s_parse_object();
@@ -838,7 +887,6 @@ tjson_t* s_parse_json(const char* json_str) {
     tjson_token_t token = s_scan_token();
     return s_parse_json_token(&token);
 }
-
 
 /*==============*
  *    Utils     *
