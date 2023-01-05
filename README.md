@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
   tjson_t *json = tjson_open("teste.json");
 
   tjson_t *image = tjson_object_get(json, "image");
-  printf("image name: %s\n", image->string);
+  printf("image name: %s\n", tjson_to_string(image));
 
   return 0;
 }
